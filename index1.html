@@ -1,0 +1,86 @@
+﻿<!DOCTYPE >
+<html>
+<body>
+<center style="margin-top: 3em;">
+	<div  style="background: gainsboro;position: relative;display: inline-block;margin:0 auto">
+		<video id="ok" width="100" height="100" autoplay="true" style="border-radius: 100rem;position: absolute;top: 5em;left: 1em;opacity: 0.7;border: solid 3px whitesmoke;">
+		</video>
+		<video id="ok1" width="500" height="500" autoplay="true">
+		</video>
+	</div>	
+</center>
+
+ 
+
+
+<script type="text/javascript">
+window.onstorage=function(e){
+				if(e.key=='local')
+				{
+					local.addIceCandidate(new RTCIceCandidate(JSON.parse(localStorage.getItem('local'))));
+				}
+				else if(e.key=='localdes')
+				{
+					local.setRemoteDescription(JSON.parse(localStorage.getItem('localdes')));
+				}
+			}
+
+
+
+window.RTCPeerConnection = (window.PeerConnection ||
+				window.webkitPeerConnection00 || 
+				window.webkitRTCPeerConnection || 
+				window.mozRTCPeerConnection);
+navigator.GetUserMedia = (navigator.getUserMedia || 
+                    navigator.webkitGetUserMedia || 
+                    navigator.mozGetUserMedia || 
+                    navigator.msGetUserMedia||navigator.mediaDevices.getUserMedia);
+function start(stream) {
+
+    var config = {
+        'iceServers': [{ 'url': 'stun:stun.services.mozilla.com' }, { 'url': 'stun:stunserver.org' }, { 'url': 'stun:stun.l.google.com:19302' }]
+    };
+    local = new RTCPeerConnection(config);
+
+
+	var channel = local.createDataChannel("Mydata");
+	channel.onopen = function(event) {
+	  channel.send('sending a message from local');
+	}
+	
+	local.ondatachannel = function(event) {
+	  receiveChannel = event.channel;
+	  receiveChannel.onmessage = function(event) {
+	    console.log(event.data);
+	  };
+	};
+
+    local.onicecandidate = function(e) {
+        if (e.candidate) {
+        	localStorage.setItem('remote',JSON.stringify(e.candidate));
+        }
+    }
+    local.onaddstream = function(ev) {
+        document.getElementById('ok1').src = window.URL.createObjectURL(ev.stream);
+    }
+    local.addStream(stream);
+        
+    local.createOffer().then(offer => {
+        local.setLocalDescription(offer);
+        localStorage.setItem('remotedes',JSON.stringify(offer));
+    });
+}
+
+navigator.GetUserMedia({
+         "audio": true,
+         "video": true
+}, function(stream){
+			document.getElementById('ok').src = URL.createObjectURL(stream);
+			start(stream)
+		}, function(error){
+			console.log('getUserMedia error: ' + error);
+	});
+</script>
+
+</body>
+</html>
