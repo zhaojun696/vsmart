@@ -1,0 +1,92 @@
+﻿<!DOCTYPE >
+<html>
+<body>
+<center style="margin-top: 3em;">
+	<div  style="background: gainsboro;position: relative;display: inline-block;margin:0 auto">
+		<video id="ok" width="100" height="100" autoplay="true" style="border-radius: 100rem;position: absolute;top: 5em;left: 1em;opacity: 0.7;border: solid 3px whitesmoke;">
+		</video>
+		<video id="ok1" width="500" height="500" autoplay="true">
+		</video>
+	</div>	
+</center>
+
+
+<script type="text/javascript">
+
+
+
+	
+	
+
+	window.onstorage=function(e){
+				if(e.key=='remote')
+				{
+					remote.addIceCandidate(new RTCIceCandidate(JSON.parse(localStorage.getItem('remote'))));
+				}
+				else if(e.key=='remotedes')
+				{
+					remote.setRemoteDescription(JSON.parse(localStorage.getItem('remotedes')));
+					remote.createAnswer().then(answer => {
+				        remote.setLocalDescription(answer);
+				        localStorage.setItem('localdes',JSON.stringify(answer));
+				    })
+				}
+			}
+
+
+window.RTCPeerConnection = (window.PeerConnection ||
+				window.webkitPeerConnection00 || 
+				window.webkitRTCPeerConnection || 
+				window.mozRTCPeerConnection);
+navigator.GetUserMedia = (navigator.getUserMedia || 
+                    navigator.webkitGetUserMedia || 
+                    navigator.mozGetUserMedia || 
+                    navigator.msGetUserMedia);
+function start(stream) {
+
+    var config = {
+        'iceServers': [{ 'url': 'stun:stun.services.mozilla.com' }, { 'url': 'stun:stunserver.org' }, { 'url': 'stun:stun.l.google.com:19302' }]
+    };
+    remote = new RTCPeerConnection(config);
+	
+	var channel1 = remote.createDataChannel("Mydata");
+	channel1.onopen = function(event) {
+	  channel1.send('sending a message from remote');
+	}
+	
+	remote.ondatachannel = function(event) {
+	  receiveChannel = event.channel;
+	  receiveChannel.onmessage = function(event) {
+	    console.log(event.data);
+	  };
+	};
+
+    remote.onicecandidate = function(e) {
+        if (e.candidate) {
+            localStorage.setItem('local',JSON.stringify(e.candidate));
+        }
+    }
+    remote.onaddstream = function(ev) {
+        document.getElementById('ok1').src = window.URL.createObjectURL(ev.stream);
+    }
+    remote.addStream(stream);
+
+
+}
+
+navigator.GetUserMedia({
+         "audio": true,
+         "video": true
+}, function(stream){
+			document.getElementById('ok').src = URL.createObjectURL(stream);
+			start(stream)
+		}, function(error){
+			console.log('getUserMedia error: ' + error);
+	});
+
+
+
+</script>
+
+</body>
+</html>
